@@ -1,0 +1,5 @@
+services:
+  node:
+    image: node
+    build: ./node
+    command: '/bin/sh -c "echo $$ID"'
