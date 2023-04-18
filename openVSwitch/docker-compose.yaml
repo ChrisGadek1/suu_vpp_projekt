@@ -1,5 +1,8 @@
 services:
-  node:
-    image: node
-    build: ./node
-    command: '/bin/sh -c "echo $$ID"'
+  receiver:
+    image: receiver
+    build: ./node_arm/receiver
+  sender:
+    image: sender
+    build: ./node_arm/sender
+    
