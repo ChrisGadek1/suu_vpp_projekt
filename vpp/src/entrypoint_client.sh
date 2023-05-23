@@ -18,14 +18,13 @@
 # Globals.
 ################################################################################
 # VPP instance socket.
-export VPP_SOCK=/run/vpp/vpp.testbench-client.sock
+export VPP_SOCK=/run/vpp/vpp.testbench-client-${OWN_ADDRESS_ENDING}.sock
 # Alias for vppctl that uses the correct socket name.
 export VPPCTL="vppctl -s ${VPP_SOCK}"
 # Our "Docker bridge network". Don't change this value.
 export NET_IF_DOCKER="eth0"
 # Name of link associated with our VXLAN.
 export LINK_VXLAN_LINUX="vxlan-vid-${VXLAN_ID_LINUX}"
-
 ################################################################################
 # Function definitions.
 ################################################################################
@@ -50,12 +49,12 @@ function context_create()
         type vxlan \
         id "${VXLAN_ID_LINUX}" \
         dstport "${VXLAN_PORT}" \
-        local "${CLIENT_BRIDGE_IP_DOCKER}" \
+        local "${CLIENT_BRIDGE_IP_DOCKER}${OWN_ADDRESS_ENDING}" \
         group "${MC_VXLAN_ADDR_LINUX}" \
         dev "${NET_IF_DOCKER}" \
         ttl 1
     ip link set "${LINK_VXLAN_LINUX}" up
-    ip addr add "${CLIENT_VXLAN_IP_LINUX}/${MASK_VXLAN_LINUX}" dev "${LINK_VXLAN_LINUX}"
+    ip addr add "${CLIENT_VXLAN_IP_LINUX}${OWN_ADDRESS_ENDING}/${MASK_VXLAN_LINUX}" dev "${LINK_VXLAN_LINUX}"
 
     # Get MTU of interface. VXLAN must use a smaller value due to overhead.
     mtu="$(cat /sys/class/net/${NET_IF_DOCKER}/mtu)"
@@ -80,14 +79,14 @@ function context_create()
     ${VPPCTL} create interface memif id 0 slave
     sleep 1
     ${VPPCTL} set int state memif0/0 up
-    ${VPPCTL} set int ip address memif0/0 "${CLIENT_VPP_MEMIF_IP}/${VPP_MEMIF_NM}"
+    ${VPPCTL} set int ip address memif0/0 "${CLIENT_VPP_MEMIF_IP}${OWN_ADDRESS_ENDING}/${VPP_MEMIF_NM}"
 
     # Create VPP-controlled tap interface bridged to the memif.
     ${VPPCTL} create tap id 0 host-if-name vpp-tap-0
     sleep 1
     ${VPPCTL} set interface state tap0 up
-    ip addr add "${CLIENT_VPP_TAP_IP_MEMIF}/${VPP_TAP_NM}" dev vpp-tap-0
-    ${VPPCTL} set interface l2 bridge tap0          "${VPP_BRIDGE_DOMAIN_TAP}"
+    ip addr add "${CLIENT_VPP_TAP_IP_MEMIF}${OWN_ADDRESS_ENDING}/${VPP_TAP_NM}" dev vpp-tap-0
+    ${VPPCTL} set interface l2 bridge tap0        "${VPP_BRIDGE_DOMAIN_TAP}"
     ${VPPCTL} set interface l2 bridge memif0/0      "${VPP_BRIDGE_DOMAIN_TAP}"
 }
 
@@ -104,8 +103,8 @@ function context_destroy()
 function context_loop()
 {
     # Sleep indefinitely (to keep container alive for testing).
-    # tail -f /dev/null
-    iperf -c ${SERVER_VPP_TAP_IP_MEMIF} -t 20
+    sleep 30
+    iperf -c "${SERVER_VPP_TAP_IP_MEMIF}${SERVER_ADDRESS_ENDING}" -t 20
     echo "koniec iperfa klient"
     tail -f /dev/null
 }
@@ -133,7 +132,7 @@ function main()
     context_create
 
     # Enable health check responder.
-    health_check_init &
+    # health_check_init &
 
     # Enter our worker loop.
     context_loop

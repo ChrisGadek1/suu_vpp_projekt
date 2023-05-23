@@ -27,11 +27,14 @@ DOCKER_HEALTH_PROBE_PORT        := $(shell bash -c ". vpp_testbench_helpers.sh; 
 # Cleanup running containers, Docker networks, etc.; from previous runs.
 define cleanup_everything
 	# Terminate the containers.
-	bash -c "\
-		. vpp_testbench_helpers.sh; \
-		host_only_kill_testbench_client_container $(DOCKER_CLIENT_IMG_FULL); \
-		host_only_kill_testbench_server_container $(DOCKER_SERVER_IMG_FULL); \
-		"
+	number=1 ; while [[ $$number -le $(PAIR_NUMBERS) ]] ; do \
+        bash -c "\
+			. vpp_testbench_helpers.sh; \
+			host_only_kill_testbench_client_container $(DOCKER_CLIENT_IMG_FULL) $$(($$number * 2 + 1)); \
+			host_only_kill_testbench_server_container $(DOCKER_SERVER_IMG_FULL) $$(($$number * 2));  \
+			" ; \
+        ((number = number + 1)) ; \
+    done
 
 	# Cleanup Docker bridge network.
 	bash -c "\
@@ -51,11 +54,15 @@ define launch_testbench
 		"
 
 	# Launch the containers.
-	bash -c "\
-		. vpp_testbench_helpers.sh; \
-		host_only_run_testbench_client_container $(DOCKER_CLIENT_IMG_FULL); \
-		host_only_run_testbench_server_container $(DOCKER_SERVER_IMG_FULL); \
-		"
+	number=1 ; while [[ $$number -le $(PAIR_NUMBERS) ]] ; do \
+		bash -c "\
+			. vpp_testbench_helpers.sh; \
+			host_only_run_testbench_client_container $(DOCKER_CLIENT_IMG_FULL)  $$(($$number * 2 + 1)) $$(($$number * 2)); \
+			host_only_run_testbench_server_container $(DOCKER_SERVER_IMG_FULL) $$(($$number * 2)); \
+			" ; \
+        ((number = number + 1)) ; \
+    done
+
 
 	# Entrypoint scripts will bring up the various links.
 	# Use "docker ps" to check status of containers, see if their health

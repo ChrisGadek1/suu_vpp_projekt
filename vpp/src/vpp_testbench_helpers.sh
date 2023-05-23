@@ -27,13 +27,13 @@ fi
 # Health check probe port for all containers.
 export DOCKER_HEALTH_PROBE_PORT="8123"
 # Docker bridge network settings.
-export CLIENT_BRIDGE_IP_DOCKER="169.254.0.1"
-export SERVER_BRIDGE_IP_DOCKER="169.254.0.2"
+export CLIENT_BRIDGE_IP_DOCKER="169.254.0."
+export SERVER_BRIDGE_IP_DOCKER="169.254.0."
 export BRIDGE_NET_DOCKER="169.254.0.0/24"
 export BRIDGE_GW_DOCKER="169.254.0.254"
 # Overlay IP addresses.
-export CLIENT_VXLAN_IP_LINUX="169.254.10.1"
-export SERVER_VXLAN_IP_LINUX="169.254.10.2"
+export CLIENT_VXLAN_IP_LINUX="169.254.10."
+export SERVER_VXLAN_IP_LINUX="169.254.10."
 export MASK_VXLAN_LINUX="24"
 export VXLAN_ID_LINUX="42"
 # IANA (rather than Linux legacy port value).
@@ -54,11 +54,11 @@ export SERVER_VPP_NETNS_DST="/var/run/netns/${DOCKER_SERVER_HOST}"
 export CLIENT_VPP_HOST_IF="vpp1"
 export SERVER_VPP_HOST_IF="vpp2"
 # Putting VPP interfaces on separate subnet from Linux-stack i/f.
-export CLIENT_VPP_MEMIF_IP="169.254.11.1"
-export SERVER_VPP_MEMIF_IP="169.254.11.2"
+export CLIENT_VPP_MEMIF_IP="169.254.11."
+export SERVER_VPP_MEMIF_IP="169.254.11."
 export VPP_MEMIF_NM="24"
-export CLIENT_VPP_TAP_IP_MEMIF="169.254.12.1"
-export SERVER_VPP_TAP_IP_MEMIF="169.254.12.2"
+export CLIENT_VPP_TAP_IP_MEMIF="169.254.12."
+export SERVER_VPP_TAP_IP_MEMIF="169.254.12."
 export VPP_TAP_NM="24"
 # Bridge domain ID (for VPP tap + VXLAN interfaces). Arbitrary.
 export VPP_BRIDGE_DOMAIN_TAP="1000"
@@ -146,7 +146,7 @@ function host_only_create_vpp_deps()
 function host_only_run_testbench_client_container()
 {
     # Sanity check.
-    if [ $# -ne 1 ]; then
+    if [ $# -ne 3 ]; then
         echo "Sanity failure."
         false
         exit
@@ -155,17 +155,21 @@ function host_only_run_testbench_client_container()
     # Launch container. Mount the local PWD into the container too (so we can
     # backup results).
     local image_name="${1}"
+    local own_address_ending="${2}"
+    local server_address_ending="${3}"
     docker run -d --rm \
+        --env OWN_ADDRESS_ENDING=${2} \
+        --env SERVER_ADDRESS_ENDING=${3} \
         --cap-add=NET_ADMIN \
         --cap-add=SYS_NICE \
         --cap-add=SYS_PTRACE \
         --device=/dev/net/tun:/dev/net/tun \
         --device=/dev/vfio/vfio:/dev/vfio/vfio \
         --device=/dev/vhost-net:/dev/vhost-net \
-        --name "${DOCKER_CLIENT_HOST}" \
+        --name "${DOCKER_CLIENT_HOST}${2}" \
         --volume="$(pwd):/work:rw" \
         --volume="${VPP_SOCK_PATH}:/run/vpp:rw" \
-        --network name="${DOCKER_NET},ip=${CLIENT_BRIDGE_IP_DOCKER}" \
+        --network name="${DOCKER_NET},ip=${CLIENT_BRIDGE_IP_DOCKER}${2}" \
         --workdir=/work \
         "${image_name}"
 }
@@ -175,7 +179,7 @@ function host_only_run_testbench_client_container()
 function host_only_run_testbench_server_container()
 {
     # Sanity check.
-    if [ $# -ne 1 ]; then
+    if [ $# -ne 2 ]; then
         echo "Sanity failure."
         false
         exit
@@ -185,15 +189,16 @@ function host_only_run_testbench_server_container()
     # backup results).
     local image_name="${1}"
     docker run -d --rm \
+        --env OWN_ADDRESS_ENDING=${2} \
         --cap-add=NET_ADMIN \
         --cap-add=SYS_NICE \
         --cap-add=SYS_PTRACE \
         --device=/dev/net/tun:/dev/net/tun \
         --device=/dev/vfio/vfio:/dev/vfio/vfio \
         --device=/dev/vhost-net:/dev/vhost-net \
-        --name "${DOCKER_SERVER_HOST}" \
+        --name "${DOCKER_SERVER_HOST}${2}" \
         --volume="${VPP_SOCK_PATH}:/run/vpp:rw" \
-        --network name="${DOCKER_NET},ip=${SERVER_BRIDGE_IP_DOCKER}" \
+        --network name="${DOCKER_NET},ip=${SERVER_BRIDGE_IP_DOCKER}${2}" \
         "${image_name}"
 }
 
@@ -201,23 +206,23 @@ function host_only_run_testbench_server_container()
 # @brief:       Terminates the testbench client container.
 function host_only_kill_testbench_client_container()
 {
-    docker kill "${DOCKER_CLIENT_HOST}" || true
-    docker rm   "${DOCKER_CLIENT_HOST}" || true
+    docker kill "${DOCKER_CLIENT_HOST}${2}" || true
+    docker rm   "${DOCKER_CLIENT_HOST}${2}" || true
 }
 
 #------------------------------------------------------------------------------#
 # @brief:       Terminates the testbench server container.
 function host_only_kill_testbench_server_container()
 {
-    docker kill "${DOCKER_SERVER_HOST}" || true
-    docker rm   "${DOCKER_SERVER_HOST}" || true
+    docker kill "${DOCKER_SERVER_HOST}${2}" || true
+    docker rm   "${DOCKER_SERVER_HOST}${2}" || true
 }
 
 #------------------------------------------------------------------------------#
 # @brief:       Launches an interactive shell in the client container.
 function host_only_shell_client_container()
 {
-    docker exec -it "${DOCKER_CLIENT_HOST}" bash --init-file /entrypoint.sh
+    docker exec -it "${DOCKER_CLIENT_HOST}${2}" bash --init-file /entrypoint.sh
 }
 
 #------------------------------------------------------------------------------#
