@@ -15,5 +15,5 @@ ip addr add "$IP_ADDRESS/16" dev "$INTERFACE"
 sleep 5
 
 # Start the iperf client
-iperf -c "172.17.$((PAIR_NUM + 1)).2" -t 20
+iperf -c "172.17.$((PAIR_NUM + 1)).2" -t 20 >./results/c"${PAIR_NUM}".txt
 echo "koniec iperfa klient"
