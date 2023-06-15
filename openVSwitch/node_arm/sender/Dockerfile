@@ -1,7 +1,8 @@
 FROM ubuntu:latest
 
-RUN apt-get update
-RUN apt install libsctp1
-RUN apt-get install iperf
+RUN apt-get update && apt-get install -y iperf iproute2
 
-CMD iperf -c receiver-1 -t 60 -u
+COPY entrypoint_client.sh /
+RUN chmod +x /entrypoint_client.sh
+
+ENTRYPOINT ["/entrypoint_client.sh"]
