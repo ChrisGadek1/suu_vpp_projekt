@@ -103,8 +103,9 @@ function context_destroy()
 function context_loop()
 {
     # Sleep indefinitely (to keep container alive for testing).
+    ls ./results
     sleep 30
-    iperf -c "${SERVER_VPP_TAP_IP_MEMIF}${SERVER_ADDRESS_ENDING}" -t 20
+    iperf -c "${SERVER_VPP_TAP_IP_MEMIF}${SERVER_ADDRESS_ENDING}" -t 20 > ./results/c${OWN_ADDRESS_ENDING}.txt
     echo "koniec iperfa klient"
     tail -f /dev/null
 }
