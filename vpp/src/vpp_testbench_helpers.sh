@@ -198,6 +198,7 @@ function host_only_run_testbench_server_container()
         --device=/dev/vhost-net:/dev/vhost-net \
         --name "${DOCKER_SERVER_HOST}${2}" \
         --volume="${VPP_SOCK_PATH}:/run/vpp:rw" \
+        --volume="./results:/results:rw" \
         --network name="${DOCKER_NET},ip=${SERVER_BRIDGE_IP_DOCKER}${2}" \
         "${image_name}"
 }
