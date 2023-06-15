@@ -1,8 +1,0 @@
-services:
-  receiver:
-    image: receiver
-    build: ./node_arm/receiver
-  sender:
-    image: sender
-    build: ./node_arm/sender
-    
